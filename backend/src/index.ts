@@ -71,7 +71,7 @@ app.get('/api/spots', async (req, res) => {
     });
 
     // Formatting it nicely for frontend (tallying votes as simple integer)
-    const formatted = spots.map(s => ({
+    const formatted = spots.map((s: typeof spots[number]) => ({
       ...s,
       votes: s._count.votes,
     }));
