@@ -140,65 +140,63 @@ export default function AddSpotScreen({ onBack }: Props) {
             <span>Adding as {handle || email}</span>
           </div>
 
-          <table className="w-full border-collapse mb-0">
-            <tbody>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">Spot name</td>
-                <td className="py-1">
-                  <input value={name} onChange={e => setName(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="e.g. Natraj Dahi Bhalle" />
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">Area</td>
-                <td className="py-1">
-                  <input value={area} onChange={e => setArea(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="e.g. Chandni Chowk, Old Delhi" />
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">Location Link</td>
-                <td className="py-1">
-                  <input value={link} onChange={e => setLink(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="Google Maps link" />
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">City</td>
-                <td className="py-1">
-                  <select value={cityId} onChange={e => setCityId(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans">
-                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">Category</td>
-                <td className="py-1">
-                  <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans">
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-top pt-3.5">Why you love it</td>
-                <td className="py-2 pt-2.5">
-                  <textarea value={desc} onChange={e => setDesc(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-2 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans min-h-[72px] resize-none" placeholder="One honest line..." />
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">Best time</td>
-                <td className="py-1">
-                  <input value={time} onChange={e => setTime(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="e.g. 11am – 8pm" />
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[13px] text-[#666] w-[130px] pr-3 py-2 align-middle">Spend</td>
-                <td className="py-1">
-                  <select value={price} onChange={e => setPrice(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans">
-                    <option>₹ under 200</option><option>₹₹ 200–700</option>
-                    <option>₹₹₹ 700–2000</option><option>₹₹₹₹ 2000+</option><option>Free</option>
-                  </select>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="w-full flex flex-col gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">Spot name</label>
+              <div className="flex-1">
+                <input value={name} onChange={e => setName(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="e.g. Natraj Dahi Bhalle" />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">Area</label>
+              <div className="flex-1">
+                <input value={area} onChange={e => setArea(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="e.g. Chandni Chowk, Old Delhi" />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">Location Link</label>
+              <div className="flex-1">
+                <input value={link} onChange={e => setLink(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="Google Maps link" />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">City</label>
+              <div className="flex-1">
+                <select value={cityId} onChange={e => setCityId(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans">
+                  {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">Category</label>
+              <div className="flex-1">
+                <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans">
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2 sm:pt-3.5">Why you love it</label>
+              <div className="flex-1 sm:pt-2.5">
+                <textarea value={desc} onChange={e => setDesc(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-2 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans min-h-[72px] resize-none" placeholder="One honest line..." />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">Best time</label>
+              <div className="flex-1">
+                <input value={time} onChange={e => setTime(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans" placeholder="e.g. 11am – 8pm" />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <label className="text-[13px] text-[#666] w-full sm:w-[130px] shrink-0 sm:pr-3 sm:py-2">Spend</label>
+              <div className="flex-1">
+                <select value={price} onChange={e => setPrice(e.target.value)} className="w-full border border-[#333] rounded-[6px] py-1.5 px-2.5 text-[13px] bg-black outline-none focus:border-[#666] font-sans">
+                  <option>₹ under 200</option><option>₹₹ 200–700</option>
+                  <option>₹₹₹ 700–2000</option><option>₹₹₹₹ 2000+</option><option>Free</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           <div className="mt-6 flex gap-2">
             <button onClick={onBack} className="text-[13px] px-3.5 py-1.5 rounded-[6px] border border-[#52525b] bg-black text-white hover:bg-[#111] font-sans">

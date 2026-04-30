@@ -17,6 +17,7 @@ export default function AppContainer() {
   const [loadingSpots, setLoadingSpots] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [showWelcome, setShowWelcome] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Local interaction state
   const [localVotes, setLocalVotes] = useState<Record<string, number>>({});
@@ -180,10 +181,19 @@ export default function AppContainer() {
   return (
     <div className="w-full h-screen flex bg-black text-white font-sans overflow-hidden">
       
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Pane 1: Cities (Folders) */}
-      <div className="w-[240px] bg-[#111] border-r border-[#333] flex flex-col z-20">
-        <div className="p-4 pl-5 pb-2 text-[11px] font-semibold tracking-widest text-[#888] uppercase mt-2">
-          BackdoorCity
+      <div className={`fixed inset-y-0 left-0 w-[280px] z-50 transform transition-transform duration-300 md:relative md:translate-x-0 md:flex md:w-[240px] shrink-0 bg-[#111] border-r border-[#333] flex-col ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-4 pl-5 pb-2 flex items-center justify-between mt-2">
+          <span className="text-[11px] font-semibold tracking-widest text-[#888] uppercase">BackdoorCity</span>
+          <button className="md:hidden text-[#888] text-[18px]" onClick={() => setMobileMenuOpen(false)}>✕</button>
         </div>
         {/* City search */}
         <div className="px-3 pb-2">
@@ -207,7 +217,7 @@ export default function AppContainer() {
               return (
                 <div 
                   key={city.id}
-                  onClick={() => { setActiveCity(city); setShowWelcome(false); setActiveSpot(null); }}
+                  onClick={() => { setActiveCity(city); setShowWelcome(false); setActiveSpot(null); setMobileMenuOpen(false); }}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
                     isActive ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'
                   }`}
@@ -224,12 +234,13 @@ export default function AppContainer() {
           {citySearch && cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).length === 0 && (
             <div className="px-3 py-2 text-[12px] text-[#555] italic">no cities found</div>
           )}
+
         </div>
       </div>
 
       {/* Pane 2: Categories (Notes List) — hidden during welcome */}
       {!showWelcome && (
-      <div className="w-[300px] bg-[#0a0a0a] border-r border-[#333] flex flex-col z-20">
+      <div className="hidden md:flex w-[300px] shrink-0 bg-[#0a0a0a] border-r border-[#333] flex-col z-20">
         <div className="p-4 pl-5 border-b border-[#333] sticky top-0">
           <div className="text-[16px] font-medium text-white tracking-tight mb-4 flex items-center justify-between">
             {activeCity?.name ?? ''}
@@ -266,10 +277,48 @@ export default function AppContainer() {
       )}
 
       {/* Pane 3: Content Area (Welcome / Spot List / Detail) */}
-      <div className="flex-1 relative bg-black flex flex-col z-10 overflow-hidden">
-        <div className="relative z-10 flex-1 overflow-y-auto px-16 py-20">
+      <div className="flex flex-1 relative bg-black flex-col z-10 overflow-hidden w-full">
+        
+        {/* Mobile Header (Always visible on small screens) */}
+        <div className="md:hidden flex flex-col border-b border-[#333] bg-[#0a0a0a] sticky top-0 z-20">
+          <div className="flex items-center p-3 justify-between">
+            {/* Left Box */}
+            <div className="flex-1 flex justify-start min-w-0">
+              {activeSpot ? (
+                <button onClick={() => setActiveSpot(null)} className="text-[#888] flex items-center gap-1 text-[14px]">
+                  ← Back
+                </button>
+              ) : !activeCity ? (
+                <button onClick={() => setMobileMenuOpen(true)} className="text-[#888] flex items-center gap-2 text-[14px] truncate">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                  <span className="truncate">Select City</span>
+                </button>
+              ) : (
+                <button onClick={() => setMobileMenuOpen(true)} className="text-[#888] flex items-center gap-2 text-[14px] truncate">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                  <span className="truncate">Cities</span>
+                </button>
+              )}
+            </div>
+
+            {/* Center Box */}
+            <div className="text-[15px] font-medium text-white text-center truncate shrink-0 px-2 max-w-[50%]">
+              {activeSpot ? activeSpot.name : activeCity ? activeCity.name : "BackdoorCity"}
+            </div>
+
+            {/* Right Box */}
+            <div className="flex-1 flex justify-end min-w-0">
+              {activeCity && !activeSpot && (
+                <button onClick={() => setScreen("add")} className="text-[#888] hover:text-white transition-colors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+              )}
+            </div>
+          </div>
+          </div>
+        <div className="relative z-10 flex-1 overflow-y-auto px-6 md:px-16 py-8 md:py-20">
           <div className="max-w-[720px] mx-auto">
-            {showWelcome ? (
+            {showWelcome && !activeCity ? (
               <div className="animate-in fade-in duration-500">
                 {/* Hero */}
                 <div className="mb-14">
@@ -328,6 +377,24 @@ export default function AppContainer() {
               </div>
             ) : !activeSpot ? (
               <div className="animate-in fade-in duration-300">
+                {/* Mobile Categories (Scrollable with content) */}
+                <div className="md:hidden flex flex-wrap gap-2 mb-8">
+                  {categories.map(cat => {
+                    const isActive = activeCategory?.id === cat.id;
+                    return (
+                      <button 
+                        key={cat.id}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-[13px] transition-colors border flex items-center gap-1.5 ${
+                          isActive ? 'bg-white text-black border-white font-medium' : 'bg-[#111] text-[#888] border-[#333]'
+                        }`}
+                      >
+                        <span className={isActive ? '' : 'grayscale'}>{cat.icon}</span> {cat.name}
+                      </button>
+                    )
+                  })}
+                </div>
+
                 <div className="mb-12 border-b border-[#333] pb-8">
                   <div className="text-[40px] font-bold text-white tracking-tight mb-2 flex items-center gap-3">
                     <span className="grayscale">{activeCategory?.icon}</span>
@@ -344,13 +411,13 @@ export default function AppContainer() {
                       <div 
                         key={spot.id} 
                         onClick={() => setActiveSpot(spot)}
-                        className="group flex items-center justify-between p-3 -mx-3 rounded-md hover:bg-[#111] cursor-pointer transition-colors border border-transparent hover:border-[#333]"
+                        className="group flex items-center justify-between py-4 px-3 -mx-3 rounded-md hover:bg-[#111] cursor-pointer transition-colors border border-transparent hover:border-[#333]"
                       >
                         <div className="flex items-center gap-4">
                           <div className="text-[14px] text-[#555] font-mono">{i + 1}</div>
                           <div className="flex flex-col">
                             <span className="text-[15px] font-medium text-white group-hover:underline underline-offset-4 decoration-[#555]">{spot.name}</span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[13px] text-[#888]">{spot.area}</span>
                               {spot.submitterHandle && (
                                 <span className="text-[11px] text-[#555]">· {spot.submitterHandle.startsWith('@') ? spot.submitterHandle : `@${spot.submitterHandle}`}</span>
@@ -358,7 +425,7 @@ export default function AppContainer() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-[13px] text-[#555] opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[13px] text-[#555] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           Open ↗
                         </div>
                       </div>

@@ -2,7 +2,7 @@ import React from "react";
 
 export function PageLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex-1 bg-black text-white h-screen overflow-y-auto px-16 py-20 z-10 w-full absolute inset-0">
+    <div className="flex-1 bg-black text-white h-screen overflow-y-auto px-6 py-8 md:px-16 md:py-20 z-10 w-full absolute inset-0">
       <div className="max-w-[720px] mx-auto">
         {children}
       </div>
