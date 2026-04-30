@@ -1,0 +1,58 @@
+# ── OS & Editor ──────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# Editor configs (keep if your team uses them)
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Environment Variables ────────────────────────────────────────
+# Never commit secrets!
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# ── Node.js ──────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── TypeScript ───────────────────────────────────────────────────
+*.tsbuildinfo
+dist/
+build/
+out/
+
+# ── Next.js (web/) ───────────────────────────────────────────────
+web/.next/
+web/out/
+web/build/
+web/.vercel
+web/next-env.d.ts
+
+# ── Prisma (backend/) ────────────────────────────────────────────
+backend/generated/
+backend/prisma/generated/
+
+# ── Logs ─────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Misc ─────────────────────────────────────────────────────────
+coverage/
+.cache/
+tmp/

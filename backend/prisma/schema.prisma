@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model City {
+  id        String   @id @default(uuid())
+  name      String
+  icon      String?
+  spots     Spot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  icon      String
+  spots     Spot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Spot {
+  id              String   @id @default(uuid())
+  name            String
+  area            String   // Neighborhood or specific area
+  locationUrl     String?  // Map link
+  
+  cityId          String
+  city            City     @relation(fields: [cityId], references: [id])
+  
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id])
+  
+  time            String?
+  price           String?
+  description     String?
+  verified        Boolean  @default(false)
+  
+  submitterEmail  String   // Authenticated via OTP
+  submitterHandle String?  // Optional IG/X handle
+  
+  tags            String[]
+  reviews         Review[]
+  votes           Vote[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Review {
+  id              String   @id @default(uuid())
+  text            String
+  
+  spotId          String
+  spot            Spot     @relation(fields: [spotId], references: [id])
+  
+  submitterEmail  String   // Authenticated via OTP
+  submitterHandle String?  // Optional IG or X handle
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  
+  spotId    String
+  spot      Spot     @relation(fields: [spotId], references: [id])
+  
+  email     String   // Used to track who voted to prevent duplicate votes per spot
+
+  createdAt DateTime @default(now())
+
+  @@unique([spotId, email])
+}
