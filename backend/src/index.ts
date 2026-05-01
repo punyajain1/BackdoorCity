@@ -13,7 +13,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -55,14 +55,14 @@ app.get('/api/categories', async (req, res) => {
 app.get('/api/spots', async (req, res) => {
   try {
     const { cityId, categoryId } = req.query;
-    
+
     let whereClause: any = {};
     if (cityId) whereClause.cityId = String(cityId);
     if (categoryId) whereClause.categoryId = String(categoryId);
 
     const spots = await prisma.spot.findMany({
       where: whereClause,
-      include: { 
+      include: {
         reviews: true,
         category: true,
         city: true,
@@ -88,7 +88,7 @@ app.post('/api/spots', async (req, res) => {
   try {
     const { name, area, locationUrl, cityId, categoryId, time, price, description, submitterEmail, submitterHandle } = req.body;
     // OTP verification would hypothetically happen before this step
-    
+
     const newSpot = await prisma.spot.create({
       data: {
         name,
@@ -102,10 +102,10 @@ app.post('/api/spots', async (req, res) => {
         submitterEmail,
         submitterHandle,
         verified: false,
-        tags: [] 
+        tags: []
       }
     });
-    
+
     res.json(newSpot);
   } catch (error) {
     console.error(error);
@@ -117,7 +117,7 @@ app.post('/api/spots', async (req, res) => {
 app.post('/api/reviews', async (req, res) => {
   try {
     const { text, spotId, submitterEmail, submitterHandle } = req.body;
-    
+
     if (!text || !spotId || !submitterEmail) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -130,7 +130,7 @@ app.post('/api/reviews', async (req, res) => {
         submitterHandle
       }
     });
-    
+
     res.json(newReview);
   } catch (error) {
     console.error(error);
@@ -142,14 +142,14 @@ app.post('/api/reviews', async (req, res) => {
 app.post('/api/spots/:spotId/upvote', async (req, res) => {
   try {
     const { spotId } = req.params;
-    
+
     // Generate a random email just to satisfy the database schema
     const anonEmail = `anon_${Date.now()}_${Math.floor(Math.random() * 10000)}@anonymous.com`;
 
     const vote = await prisma.vote.create({
       data: { spotId, email: anonEmail }
     });
-    
+
     res.json(vote);
   } catch (error) {
     console.error(error);
@@ -173,7 +173,7 @@ app.post('/api/spots/:spotId/downvote', async (req, res) => {
       });
       return res.json({ success: true, message: 'Vote removed' });
     }
-    
+
     res.json({ success: true, message: 'No votes to remove' });
   } catch (error) {
     console.error(error);
@@ -238,6 +238,6 @@ app.patch('/api/spots/:spotId', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running at http://0.0.0.0:${port}`);
 });
