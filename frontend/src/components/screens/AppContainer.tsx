@@ -42,14 +42,16 @@ export default function AppContainer() {
   useEffect(() => {
     fetch(`${API_URL}/api/cities`)
       .then(res => res.json())
-      .then(data => { setCities(data); });
+      .then(data => { setCities(data); })
+      .catch(err => console.error("Failed to fetch cities:", err));
 
     fetch(`${API_URL}/api/categories`)
       .then(res => res.json())
       .then(data => {
         setCategories(data);
         if (data.length > 0) setActiveCategory(data[0]);
-      });
+      })
+      .catch(err => console.error("Failed to fetch categories:", err));
   }, []);
 
   useEffect(() => {
@@ -60,6 +62,10 @@ export default function AppContainer() {
         .then(data => {
           setSpots(data);
           setActiveSpot(null);
+          setLoadingSpots(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch spots:", err);
           setLoadingSpots(false);
         });
     }
@@ -540,6 +546,18 @@ export default function AppContainer() {
                   </div>
                 )}
                 
+                <div className="mb-8 rounded-md overflow-hidden border border-[#333] h-[200px] md:h-[280px] w-full relative bg-[#0a0a0a]">
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameBorder="0" 
+                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }} 
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent((activeSpot.name + " " + (activeSpot.area || "") + " " + (activeCity?.name || "")).trim())}&t=&z=15&ie=UTF8&iwloc=&output=embed`} 
+                    allowFullScreen
+                    loading="lazy"
+                  ></iframe>
+                </div>
+
                 <div className="mb-10">
                   <h1 className="text-[40px] font-bold text-white tracking-tight leading-[1.2] mb-6">{activeSpot.name}</h1>
                   
