@@ -17,6 +17,7 @@
     "seed": "ts-node-dev prisma/seed.ts"
   },
   "dependencies": {
+    "prisma": "...",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/pg": "^8.20.0",
