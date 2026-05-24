@@ -8,7 +8,7 @@ interface Props {
 
 export default function AddSpotScreen({ onBack }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("anonymous@example.com");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [handle, setHandle] = useState("");
@@ -59,7 +59,8 @@ export default function AddSpotScreen({ onBack }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name, area, locationUrl: link, cityId, categoryId,
-          time, price, description: desc, submitterEmail: email, submitterHandle: handle
+          time, price, description: desc, submitterEmail: email,
+          submitterHandle: handle.trim() ? (handle.startsWith('@') ? handle.trim() : `@${handle.trim()}`) : "anonymous"
         })
       });
       if (res.ok) {
@@ -83,6 +84,7 @@ export default function AddSpotScreen({ onBack }: Props) {
         <>
           <PageHeader icon="✏️" title="Add a spot" sub="Who's adding this?" />
 
+          {/* Email input commented out
           <div className="p-4 rounded-[10px] border border-[#333] mb-3">
             <div className="flex items-center gap-2.5 mb-1">
               <span className="text-[16px] w-[20px] text-center">✉️</span>
@@ -102,6 +104,7 @@ export default function AddSpotScreen({ onBack }: Props) {
               />
             </div>
           </div>
+          */}
 
           <div className="p-4 rounded-[10px] border border-[#333] mb-3">
             <div className="flex items-center gap-2.5 mb-1">
@@ -122,9 +125,8 @@ export default function AddSpotScreen({ onBack }: Props) {
           </div>
 
           <button
-            disabled={!email}
             onClick={() => setStep(2)}
-            className="w-full mt-4 text-[13px] px-3.5 py-2 rounded-[6px] bg-white text-black font-medium disabled:opacity-30 disabled:cursor-not-allowed font-sans transition-opacity"
+            className="w-full mt-4 text-[13px] px-3.5 py-2 rounded-[6px] bg-white text-black font-medium font-sans transition-opacity"
           >
             Continue Form →
           </button>
@@ -137,7 +139,7 @@ export default function AddSpotScreen({ onBack }: Props) {
 
           <div className="flex items-center gap-2 p-2.5 rounded-[6px] border border-[#333] bg-[#111] text-[13px] text-[#888] mb-4">
             <div className="w-2 h-2 rounded-full bg-white" />
-            <span>Adding as {handle || email}</span>
+            <span>Adding as {handle || "anonymous"}</span>
           </div>
 
           <div className="w-full flex flex-col gap-4 mb-4">

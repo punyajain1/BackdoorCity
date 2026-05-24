@@ -15,6 +15,7 @@ export default function AppContainer() {
   
   const [screen, setScreen] = useState<"wiki" | "add">("wiki");
   const [loadingSpots, setLoadingSpots] = useState(false);
+  const [loadingSidebar, setLoadingSidebar] = useState(true);
   const [citySearch, setCitySearch] = useState("");
   const [showWelcome, setShowWelcome] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -26,7 +27,7 @@ export default function AppContainer() {
   const [localReviews, setLocalReviews] = useState<Record<string, any[]>>({});
 
   const [newReview, setNewReview] = useState("");
-  const [reviewEmail, setReviewEmail] = useState("");
+  const [reviewEmail, setReviewEmail] = useState("anonymous@example.com");
   const [handle, setHandle] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
@@ -34,24 +35,34 @@ export default function AppContainer() {
   // Edit spot state
   const [editOpen, setEditOpen] = useState(false);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
-  const [editEmail, setEditEmail] = useState("");
+  const [editEmail, setEditEmail] = useState("anonymous@example.com");
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/cities`)
-      .then(res => res.json())
-      .then(data => { setCities(data); })
-      .catch(err => console.error("Failed to fetch cities:", err));
-
-    fetch(`${API_URL}/api/categories`)
-      .then(res => res.json())
-      .then(data => {
-        setCategories(data);
-        if (data.length > 0) setActiveCategory(data[0]);
+    setLoadingSidebar(true);
+    Promise.all([
+      fetch(`${API_URL}/api/cities`).then(res => {
+        if (!res.ok) throw new Error("Failed to fetch cities");
+        return res.json();
+      }),
+      fetch(`${API_URL}/api/categories`).then(res => {
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        return res.json();
       })
-      .catch(err => console.error("Failed to fetch categories:", err));
+    ])
+      .then(([citiesData, categoriesData]) => {
+        setCities(citiesData);
+        setCategories(categoriesData);
+        if (categoriesData.length > 0) setActiveCategory(categoriesData[0]);
+      })
+      .catch(err => {
+        console.error("Failed to fetch initial sidebar data:", err);
+      })
+      .finally(() => {
+        setLoadingSidebar(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -105,7 +116,8 @@ export default function AppContainer() {
 
   const handlePostReview = async (spotId: string) => {
     if (!newReview.trim()) { setReviewError('Review text is required.'); return; }
-    if (!reviewEmail.trim()) { setReviewError('Email is required.'); return; }
+    // Email is commented out
+    // if (!reviewEmail.trim()) { setReviewError('Email is required.'); return; }
     setReviewError('');
     setReviewLoading(true);
 
@@ -118,8 +130,8 @@ export default function AppContainer() {
           spotId,
           submitterEmail: reviewEmail.trim(),
           submitterHandle: handle.trim()
-            ? (handle.startsWith('@') ? handle : `@${handle}`)
-            : null,
+            ? (handle.startsWith('@') ? handle.trim() : `@${handle.trim()}`)
+            : "anonymous",
         }),
       });
 
@@ -146,7 +158,8 @@ export default function AppContainer() {
   };
 
   const handleEditSubmit = async () => {
-    if (!editEmail.trim()) { setEditError('Your email is required to edit.'); return; }
+    // Email is commented out
+    // if (!editEmail.trim()) { setEditError('Your email is required to edit.'); return; }
     setEditError('');
     setEditLoading(true);
     setEditSuccess(false);
@@ -215,32 +228,61 @@ export default function AppContainer() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-3 space-y-0.5 mt-1">
-          {cities
-            .filter(city => city.name.toLowerCase().includes(citySearch.toLowerCase()))
-            .sort((a, b) => (b._count?.spots ?? 0) - (a._count?.spots ?? 0))
-            .map(city => {
-              const isActive = activeCity?.id === city.id;
-              return (
-                <div 
-                  key={city.id}
-                  onClick={() => { setActiveCity(city); setShowWelcome(false); setActiveSpot(null); setMobileMenuOpen(false); }}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    isActive ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'
-                  }`}
-                >
-                  <div className="text-[14px] opacity-90">{city.icon || '❖'}</div>
-                  <div className="text-[14px] font-medium flex-1">{city.name.toLowerCase()}</div>
-                  {city._count?.spots > 0 && (
-                    <div className="text-[10px] text-[#555]">{city._count.spots}</div>
-                  )}
+          {loadingSidebar ? (
+            <div className="space-y-3 px-3 py-2">
+              {/* Premium Waking Up Disclaimer */}
+              <div className="text-[11px] text-[#888] leading-relaxed bg-[#1a1a1a] rounded-md p-3 border border-[#2a2a2a] mb-4 animate-pulse">
+                <div className="flex items-center gap-2 text-amber-500/90 mb-1 font-semibold">
+                  <svg className="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Waking up database...</span>
                 </div>
-              )
-            })
-          }
-          {citySearch && cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).length === 0 && (
-            <div className="px-3 py-2 text-[12px] text-[#555] italic">no cities found</div>
+                The backend on Render is waking up from its free-tier sleep. It will load in just a second!
+              </div>
+              {/* Pulse skeletons */}
+              {Array.from({ length: 12 }).map((_, idx) => {
+                const widths = ["w-1/2", "w-2/3", "w-3/4", "w-3/5", "w-5/6", "w-4/5"];
+                const widthClass = widths[idx % widths.length];
+                return (
+                  <div key={idx} className="flex items-center gap-3 py-1.5 animate-pulse">
+                    <div className="w-4 h-4 rounded bg-neutral-800" />
+                    <div className={`h-3.5 bg-neutral-800 rounded ${widthClass}`} />
+                    <div className="ml-auto w-5 h-3 bg-neutral-800/40 rounded-sm" />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              {cities
+                .filter(city => city.name.toLowerCase().includes(citySearch.toLowerCase()))
+                .sort((a, b) => (b._count?.spots ?? 0) - (a._count?.spots ?? 0))
+                .map(city => {
+                  const isActive = activeCity?.id === city.id;
+                  return (
+                    <div 
+                      key={city.id}
+                      onClick={() => { setActiveCity(city); setShowWelcome(false); setActiveSpot(null); setMobileMenuOpen(false); }}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                        isActive ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'
+                      }`}
+                    >
+                      <div className="text-[14px] opacity-90">{city.icon || '❖'}</div>
+                      <div className="text-[14px] font-medium flex-1">{city.name.toLowerCase()}</div>
+                      {city._count?.spots > 0 && (
+                        <div className="text-[10px] text-[#555]">{city._count.spots}</div>
+                      )}
+                    </div>
+                  )
+                })
+              }
+              {citySearch && cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase())).length === 0 && (
+                <div className="px-3 py-2 text-[12px] text-[#555] italic">no cities found</div>
+              )}
+            </>
           )}
-
         </div>
       </div>
 
@@ -514,6 +556,7 @@ export default function AppContainer() {
                         </div>
                       ))}
 
+                      {/* Email field commented out
                       <div className="border-t border-[#333] pt-4 flex gap-4 items-start">
                         <label className="text-[13px] text-[#666] w-[110px] pt-1.5 shrink-0">Your email</label>
                         <input
@@ -524,6 +567,7 @@ export default function AppContainer() {
                           className="flex-1 bg-black border border-[#333] rounded px-3 py-2 text-[13px] text-white outline-none focus:border-[#666] transition-colors"
                         />
                       </div>
+                      */}
 
                       {editError && <div className="text-[12px] text-red-400">{editError}</div>}
 
@@ -667,6 +711,7 @@ export default function AppContainer() {
                     />
                     <div className="border-t border-[#333] pt-3 mt-2 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
+                        {/* Email input commented out
                         <input
                           value={reviewEmail}
                           onChange={(e) => setReviewEmail(e.target.value)}
@@ -674,11 +719,12 @@ export default function AppContainer() {
                           type="email"
                           className="bg-transparent text-[13px] text-white outline-none placeholder-[#666] flex-1 border-b border-[#333] pb-1 focus:border-[#666] transition-colors"
                         />
+                        */}
                         <input
                           value={handle}
                           onChange={(e) => setHandle(e.target.value)}
                           placeholder="@handle (optional)"
-                          className="bg-transparent text-[13px] text-white outline-none placeholder-[#666] w-[160px] border-b border-[#333] pb-1 focus:border-[#666] transition-colors"
+                          className="bg-transparent text-[13px] text-white outline-none placeholder-[#666] flex-1 border-b border-[#333] pb-1 focus:border-[#666] transition-colors"
                         />
                       </div>
                       {reviewError && (

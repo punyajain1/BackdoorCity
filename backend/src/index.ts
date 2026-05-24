@@ -99,8 +99,8 @@ app.post('/api/spots', async (req, res) => {
         time,
         price,
         description,
-        submitterEmail,
-        submitterHandle,
+        submitterEmail: submitterEmail || 'anonymous@example.com',
+        submitterHandle: submitterHandle || 'anonymous',
         verified: false,
         tags: []
       }
@@ -118,7 +118,7 @@ app.post('/api/reviews', async (req, res) => {
   try {
     const { text, spotId, submitterEmail, submitterHandle } = req.body;
 
-    if (!text || !spotId || !submitterEmail) {
+    if (!text || !spotId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -126,8 +126,8 @@ app.post('/api/reviews', async (req, res) => {
       data: {
         text,
         spotId,
-        submitterEmail,
-        submitterHandle
+        submitterEmail: submitterEmail || 'anonymous@example.com',
+        submitterHandle: submitterHandle || 'anonymous'
       }
     });
 
