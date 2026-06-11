@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { PageLayout, PageHeader, Breadcrumb, Chip } from "@/components/ui/Shared";
 import { API_URL } from "@/lib/api";

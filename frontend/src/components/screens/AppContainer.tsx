@@ -4,21 +4,25 @@ import { useState, useEffect } from "react";
 import AddSpotScreen from "@/components/screens/AddSpotScreen";
 import { API_URL } from "@/lib/api";
 
-export default function AppContainer() {
+const toSlug = (str: string) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+export default function AppContainer({ slug }: { slug?: string[] }) {
   const [cities, setCities] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [spots, setSpots] = useState<any[]>([]);
-  
+
   const [activeCity, setActiveCity] = useState<any>(null);
   const [activeCategory, setActiveCategory] = useState<any>(null);
   const [activeSpot, setActiveSpot] = useState<any>(null);
-  
+
   const [screen, setScreen] = useState<"wiki" | "add">("wiki");
   const [loadingSpots, setLoadingSpots] = useState(false);
   const [loadingSidebar, setLoadingSidebar] = useState(true);
   const [citySearch, setCitySearch] = useState("");
   const [showWelcome, setShowWelcome] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [initialSpotLoaded, setInitialSpotLoaded] = useState(false);
 
   // Local interaction state
   const [localVotes, setLocalVotes] = useState<Record<string, number>>({});
@@ -54,8 +58,35 @@ export default function AppContainer() {
     ])
       .then(([citiesData, categoriesData]) => {
         setCities(citiesData);
-        setCategories(categoriesData);
-        if (categoriesData.length > 0) setActiveCategory(categoriesData[0]);
+        
+        // Override category name for display
+        const mappedCategories = categoriesData.map((c: any) => {
+          if (c.name.includes("Co-working") || c.name === "Co Working") {
+            return { ...c, name: "Co Working Space" };
+          }
+          return c;
+        });
+        setCategories(mappedCategories);
+
+        let initialCity = null;
+        let initialCategory = null;
+
+        if (slug && slug[0]) {
+          initialCity = citiesData.find((c: any) => toSlug(c.name) === slug[0]);
+        }
+        if (slug && slug[1]) {
+          initialCategory = mappedCategories.find((c: any) => toSlug(c.name) === slug[1]);
+        }
+
+        if (initialCity) {
+          setActiveCity(initialCity);
+          setShowWelcome(false);
+        }
+        if (initialCategory) {
+          setActiveCategory(initialCategory);
+        } else if (mappedCategories.length > 0 && (!slug || !slug[1])) {
+          setActiveCategory(mappedCategories[0]);
+        }
       })
       .catch(err => {
         console.error("Failed to fetch initial sidebar data:", err);
@@ -72,7 +103,19 @@ export default function AppContainer() {
         .then(res => res.json())
         .then(data => {
           setSpots(data);
-          setActiveSpot(null);
+          let initialSpot = null;
+          if (slug && slug[2] && !initialSpotLoaded) {
+            initialSpot = data.find((s: any) => toSlug(s.name) === slug[2]);
+            setInitialSpotLoaded(true);
+          }
+          if (initialSpot) {
+            setActiveSpot(initialSpot);
+          } else if (activeSpot) {
+            const found = data.find((s: any) => s.id === activeSpot.id);
+            setActiveSpot(found || null);
+          } else {
+            setActiveSpot(null);
+          }
           setLoadingSpots(false);
         })
         .catch(err => {
@@ -80,7 +123,24 @@ export default function AppContainer() {
           setLoadingSpots(false);
         });
     }
-  }, [activeCity, activeCategory]);
+  }, [activeCity, activeCategory, slug, initialSpotLoaded]);
+
+  useEffect(() => {
+    if (loadingSidebar) return;
+    let path = '/';
+    if (showWelcome) {
+      path = '/';
+    } else if (activeCity) {
+      path = `/${toSlug(activeCity.name)}`;
+      if (activeCategory) {
+        path += `/${toSlug(activeCategory.name)}`;
+        if (activeSpot) {
+          path += `/${toSlug(activeSpot.name)}`;
+        }
+      }
+    }
+    window.history.pushState(null, '', path);
+  }, [activeCity, activeCategory, activeSpot, showWelcome, loadingSidebar]);
 
   const handleUpvote = async (spotId: string, currentVotes: number) => {
     if (voteLoading[spotId] || votedSpotIds.has(spotId)) return;
@@ -199,10 +259,10 @@ export default function AppContainer() {
 
   return (
     <div className="w-full h-screen flex bg-black text-white font-sans overflow-hidden">
-      
+
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -217,7 +277,7 @@ export default function AppContainer() {
         {/* City search */}
         <div className="px-3 pb-2">
           <div className="relative">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
             <input
               id="city-search"
               value={citySearch}
@@ -262,12 +322,11 @@ export default function AppContainer() {
                 .map(city => {
                   const isActive = activeCity?.id === city.id;
                   return (
-                    <div 
+                    <div
                       key={city.id}
                       onClick={() => { setActiveCity(city); setShowWelcome(false); setActiveSpot(null); setMobileMenuOpen(false); }}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                        isActive ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${isActive ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'
+                        }`}
                     >
                       <div className="text-[14px] opacity-90">{city.icon || '❖'}</div>
                       <div className="text-[14px] font-medium flex-1">{city.name.toLowerCase()}</div>
@@ -288,45 +347,44 @@ export default function AppContainer() {
 
       {/* Pane 2: Categories (Notes List) — hidden during welcome */}
       {!showWelcome && (
-      <div className="hidden md:flex w-[300px] shrink-0 bg-[#0a0a0a] border-r border-[#333] flex-col z-20">
-        <div className="p-4 pl-5 border-b border-[#333] sticky top-0">
-          <div className="text-[16px] font-medium text-white tracking-tight mb-4 flex items-center justify-between">
-            {activeCity?.name ?? ''}
-            <button onClick={() => setScreen("add")} className="text-[#888] hover:text-white transition-colors">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
+        <div className="hidden md:flex w-[300px] shrink-0 bg-[#0a0a0a] border-r border-[#333] flex-col z-20">
+          <div className="p-4 pl-5 border-b border-[#333] sticky top-0">
+            <div className="text-[16px] font-medium text-white tracking-tight mb-4 flex items-center justify-between">
+              {activeCity?.name ?? ''}
+              <button onClick={() => setScreen("add")} className="text-[#888] hover:text-white transition-colors">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+              </button>
+            </div>
+            <div className="relative">
+              <svg className="absolute left-3 top-2 text-[#666]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+              <input placeholder="Search pages..." className="w-full bg-black border border-[#333] rounded py-1 pl-9 pr-3 text-[13px] text-white outline-none focus:border-[#555] transition-colors" />
+            </div>
           </div>
-          <div className="relative">
-            <svg className="absolute left-3 top-2 text-[#666]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input placeholder="Search pages..." className="w-full bg-black border border-[#333] rounded py-1 pl-9 pr-3 text-[13px] text-white outline-none focus:border-[#555] transition-colors" />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {categories.map(cat => {
-            const isActive = activeCategory?.id === cat.id;
-            return (
-              <div 
-                key={cat.id}
-                onClick={() => setActiveCategory(cat)}
-                className={`flex items-start gap-3 p-4 border-b border-[#222] cursor-pointer transition-colors ${
-                  isActive ? 'bg-[#1a1a1a]' : 'hover:bg-[#111]'
-                }`}
-              >
-                <div className="text-[16px] mt-0.5 grayscale">{cat.icon}</div>
-                <div className="flex-1">
-                  <div className={`text-[14px] font-medium mb-0.5 ${isActive ? 'text-white' : 'text-[#aaa]'}`}>{cat.name}</div>
-                  <div className="text-[12px] text-[#666] line-clamp-1">{cat.name} spots in {activeCity?.name}</div>
+          <div className="flex-1 overflow-y-auto">
+            {categories.map(cat => {
+              const isActive = activeCategory?.id === cat.id;
+              return (
+                <div
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`flex items-start gap-3 p-4 border-b border-[#222] cursor-pointer transition-colors ${isActive ? 'bg-[#1a1a1a]' : 'hover:bg-[#111]'
+                    }`}
+                >
+                  <div className="text-[16px] mt-0.5 grayscale">{cat.icon}</div>
+                  <div className="flex-1">
+                    <div className={`text-[14px] font-medium mb-0.5 ${isActive ? 'text-white' : 'text-[#aaa]'}`}>{cat.name}</div>
+                    <div className="text-[12px] text-[#666] line-clamp-1">{cat.name} spots in {activeCity?.name}</div>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
-      </div>
       )}
 
       {/* Pane 3: Content Area (Welcome / Spot List / Detail) */}
       <div className="flex flex-1 relative bg-black flex-col z-10 overflow-hidden w-full">
-        
+
         {/* Mobile Header (Always visible on small screens) */}
         <div className="md:hidden flex flex-col border-b border-[#333] bg-[#0a0a0a] sticky top-0 z-20">
           <div className="flex items-center p-3 justify-between">
@@ -338,12 +396,12 @@ export default function AppContainer() {
                 </button>
               ) : !activeCity ? (
                 <button onClick={() => setMobileMenuOpen(true)} className="text-[#888] flex items-center gap-2 text-[14px] truncate">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
                   <span className="truncate">Select City</span>
                 </button>
               ) : (
                 <button onClick={() => setMobileMenuOpen(true)} className="text-[#888] flex items-center gap-2 text-[14px] truncate">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
                   <span className="truncate">Cities</span>
                 </button>
               )}
@@ -358,12 +416,12 @@ export default function AppContainer() {
             <div className="flex-1 flex justify-end min-w-0">
               {activeCity && !activeSpot && (
                 <button onClick={() => setScreen("add")} className="text-[#888] hover:text-white transition-colors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
               )}
             </div>
           </div>
-          </div>
+        </div>
         <div className="relative z-10 flex-1 overflow-y-auto px-6 md:px-16 py-8 md:py-20">
           <div className="max-w-[720px] mx-auto">
             {showWelcome && !activeCity ? (
@@ -377,6 +435,54 @@ export default function AppContainer() {
                   <p className="text-[16px] text-[#666] leading-relaxed max-w-[480px]">
                     A community-built wiki of the best spots across Indian cities — cafés, street food, hidden gems, viewpoints, and more. No ads. No sponsored posts. Just real recommendations.
                   </p>
+
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    {/* Twitter/X Share */}
+                    <button
+                      onClick={() => {
+                        const text = "Discover India's underground city guide. Skip the tourist traps and find real recommendations curated by locals. 🇮🇳✨";
+                        const url = window.location.origin;
+                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#333] text-[14px] font-medium text-white hover:border-white/50 hover:bg-white/10 transition-colors w-fit"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                      X
+                    </button>
+
+                    {/* WhatsApp Share */}
+                    <button
+                      onClick={() => {
+                        const text = "Check out BackdoorCity - India's underground city guide:";
+                        const url = window.location.origin;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#333] text-[14px] font-medium text-green-400 hover:border-green-400/50 hover:bg-green-400/10 transition-colors w-fit"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
+                      WhatsApp
+                    </button>
+
+                    {/* Generic / IG Share */}
+                    <button
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: "BackdoorCity",
+                            text: "Check out BackdoorCity - India's underground city guide.",
+                            url: window.location.origin,
+                          }).catch(console.error);
+                        } else {
+                          navigator.clipboard.writeText(window.location.origin);
+                          alert("Link copied to clipboard!");
+                        }
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#333] text-[14px] font-medium text-pink-400 hover:border-pink-400/50 hover:bg-pink-400/10 transition-colors w-fit"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
+                      Share / Story
+                    </button>
+                  </div>
                 </div>
 
                 {/* How to navigate */}
@@ -430,12 +536,11 @@ export default function AppContainer() {
                   {categories.map(cat => {
                     const isActive = activeCategory?.id === cat.id;
                     return (
-                      <button 
+                      <button
                         key={cat.id}
                         onClick={() => setActiveCategory(cat)}
-                        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-[13px] transition-colors border flex items-center gap-1.5 ${
-                          isActive ? 'bg-white text-black border-white font-medium' : 'bg-[#111] text-[#888] border-[#333]'
-                        }`}
+                        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-[13px] transition-colors border flex items-center gap-1.5 ${isActive ? 'bg-white text-black border-white font-medium' : 'bg-[#111] text-[#888] border-[#333]'
+                          }`}
                       >
                         <span className={isActive ? '' : 'grayscale'}>{cat.icon}</span> {cat.name}
                       </button>
@@ -456,8 +561,8 @@ export default function AppContainer() {
                 ) : (
                   <div className="space-y-2">
                     {spots.map((spot, i) => (
-                      <div 
-                        key={spot.id} 
+                      <div
+                        key={spot.id}
                         onClick={() => setActiveSpot(spot)}
                         className="group flex items-center justify-between py-4 px-3 -mx-3 rounded-md hover:bg-[#111] cursor-pointer transition-colors border border-transparent hover:border-[#333]"
                       >
@@ -513,11 +618,10 @@ export default function AppContainer() {
                       }
                       setEditOpen(o => !o);
                     }}
-                    className={`text-[13px] font-medium px-3 py-1 rounded border transition-colors ${
-                      editOpen
-                        ? 'bg-white text-black border-white'
-                        : 'bg-transparent text-[#888] border-[#333] hover:text-white hover:border-[#666]'
-                    }`}
+                    className={`text-[13px] font-medium px-3 py-1 rounded border transition-colors ${editOpen
+                      ? 'bg-white text-black border-white'
+                      : 'bg-transparent text-[#888] border-[#333] hover:text-white hover:border-[#666]'
+                      }`}
                   >
                     {editOpen ? 'Cancel' : 'Edit'}
                   </button>
@@ -529,12 +633,12 @@ export default function AppContainer() {
                     <div className="text-[12px] font-semibold text-[#666] uppercase tracking-[0.2em] mb-5">Edit Spot</div>
                     <div className="space-y-4">
                       {([
-                        { key: 'name',        label: 'Name',          placeholder: 'Spot name' },
-                        { key: 'area',        label: 'Area',          placeholder: 'Neighbourhood / area' },
-                        { key: 'description', label: 'Description',   placeholder: 'What makes it worth going?', multi: true },
-                        { key: 'time',        label: 'Best time',     placeholder: 'e.g. 11am – 8pm' },
-                        { key: 'price',       label: 'Spend',         placeholder: 'e.g. ₹ under 200' },
-                        { key: 'locationUrl', label: 'Map link',      placeholder: 'Google Maps URL' },
+                        { key: 'name', label: 'Name', placeholder: 'Spot name' },
+                        { key: 'area', label: 'Area', placeholder: 'Neighbourhood / area' },
+                        { key: 'description', label: 'Description', placeholder: 'What makes it worth going?', multi: true },
+                        { key: 'time', label: 'Best time', placeholder: 'e.g. 11am – 8pm' },
+                        { key: 'price', label: 'Spend', placeholder: 'e.g. ₹ under 200' },
+                        { key: 'locationUrl', label: 'Map link', placeholder: 'Google Maps URL' },
                       ] as { key: string; label: string; placeholder: string; multi?: boolean }[]).map(({ key, label, placeholder, multi }) => (
                         <div key={key} className="flex gap-4 items-start">
                           <label className="text-[13px] text-[#666] w-[110px] pt-1.5 shrink-0">{label}</label>
@@ -589,14 +693,14 @@ export default function AppContainer() {
                     ✓ Spot updated successfully.
                   </div>
                 )}
-                
+
                 <div className="mb-8 rounded-md overflow-hidden border border-[#333] h-[200px] md:h-[280px] w-full relative bg-[#0a0a0a]">
-                  <iframe 
-                    width="100%" 
-                    height="100%" 
-                    frameBorder="0" 
-                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }} 
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent((activeSpot.name + " " + (activeSpot.area || "") + " " + (activeCity?.name || "")).trim())}&t=&z=15&ie=UTF8&iwloc=&output=embed`} 
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }}
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent((activeSpot.name + " " + (activeSpot.area || "") + " " + (activeCity?.name || "")).trim())}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                     allowFullScreen
                     loading="lazy"
                   ></iframe>
@@ -604,7 +708,7 @@ export default function AppContainer() {
 
                 <div className="mb-10">
                   <h1 className="text-[40px] font-bold text-white tracking-tight leading-[1.2] mb-6">{activeSpot.name}</h1>
-                  
+
                   <div className="flex flex-wrap items-center gap-4 py-4 border-y border-[#333]">
                     <div className="flex flex-col">
                       <span className="text-[12px] text-[#666] uppercase tracking-wider mb-1">Area</span>
@@ -655,13 +759,12 @@ export default function AppContainer() {
                     onClick={() => handleUpvote(activeSpot.id, activeSpot.votes || 0)}
                     disabled={voteLoading[activeSpot.id] || votedSpotIds.has(activeSpot.id)}
                     title="Upvote"
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md border text-[14px] font-medium transition-colors disabled:opacity-40 ${
-                      votedSpotIds.has(activeSpot.id)
-                        ? 'bg-white text-black border-white cursor-default'
-                        : 'bg-transparent text-white border-[#333] hover:border-[#666]'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md border text-[14px] font-medium transition-colors disabled:opacity-40 ${votedSpotIds.has(activeSpot.id)
+                      ? 'bg-white text-black border-white cursor-default'
+                      : 'bg-transparent text-white border-[#333] hover:border-[#666]'
+                      }`}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2L22 20H2L12 2Z"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2L22 20H2L12 2Z" /></svg>
                     {voteLoading[activeSpot.id] ? '…' : (localVotes[activeSpot.id] ?? (activeSpot.votes || 0))}
                   </button>
 
@@ -672,13 +775,47 @@ export default function AppContainer() {
                     title="Remove upvote"
                     className="flex items-center gap-2 px-4 py-2 rounded-md border text-[14px] font-medium transition-colors border-[#333] text-[#666] hover:border-[#666] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 22L2 4H22L12 22Z"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 22L2 4H22L12 22Z" /></svg>
+                  </button>
+
+                  <div className="w-[1px] h-6 bg-[#333] mx-2"></div>
+
+                  {/* Share buttons */}
+                  <button
+                    onClick={() => {
+                      const url = window.location.href;
+                      const text = `Check out ${activeSpot.name} on BackdoorCity:`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-md border border-[#333] text-[14px] font-medium text-green-400 hover:border-green-400/50 hover:bg-green-400/10 transition-colors hidden sm:flex"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: activeSpot.name,
+                          text: `Check out ${activeSpot.name} on BackdoorCity`,
+                          url: window.location.href,
+                        }).catch(console.error);
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                        alert("Link copied to clipboard!");
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-md border border-[#333] text-[14px] font-medium text-pink-400 hover:border-pink-400/50 hover:bg-pink-400/10 transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
+                    <span className="hidden sm:inline">IG Story / Share</span>
+                    <span className="sm:hidden">Share</span>
                   </button>
                 </div>
 
                 <div className="border-t border-[#333] pt-12">
                   <h3 className="text-[18px] font-bold text-white mb-6">Reviews & Notes</h3>
-                  
+
                   <div className="space-y-6 mb-10">
                     {(() => {
                       const spotRevs = [...(localReviews[activeSpot.id] || []), ...(activeSpot.reviews || [])];

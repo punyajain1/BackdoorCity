@@ -17,7 +17,7 @@ async function main() {
     { name: 'Food', icon: '🥘' },
     { name: 'Coffee', icon: '☕' },
     { name: 'Gyms', icon: '🏋️' },
-    { name: 'Co-working (we don\'t work)', icon: '💻' },
+    { name: 'Co Working', icon: '💻' },
     { name: 'Drinks?', icon: '🪩' },
     { name: 'Gedi Routes', icon: '🏎️' },
     { name: 'Date Plans', icon: '💐' },
